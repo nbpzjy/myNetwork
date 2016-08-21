@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.Buffer;
 import java.util.HashMap;
@@ -67,58 +68,54 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     super.run();
-                    doHttpPost(link,params);
+                    doHttpPost("jianyong","123");
                 }
             }).start();
 
         }
     }
+    //--------------------------
 
-    //POST方法
-    private void doHttpPost(String link, Map<String,String> params) {
-
+    public String doHttpPost(String username, String password) {
+        String path = "http://192.168.123.206/mynetwork/index.php";
         BufferedReader reader = null;
         StringBuffer sb;
 
-        try{
+        try {
+            URL url = new URL(path);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(5000);
+            connection.setRequestMethod("POST");
 
-            URL url = new URL(link);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(5000);
-            conn.setRequestMethod("POST");
+            //数据准备
+            String data = "username=" + username + "&password=" + password;
+            //至少要设置的两个请求头
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setRequestProperty("Content-Length", data.length() + "");
 
-            //获得请求参数
-            sb = new StringBuffer("");
-//            sb.append("?");
-
-            for (String key: params.keySet()
-                    ){
-                sb.append(key+"="+params.get(key)+"&");
-            }
-
-            sb.deleteCharAt(sb.length()-1);
-
-            Log.d("-----link-----","POST"+sb.toString());
-
-            //开始请求
-            conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
-            conn.setRequestProperty("Content-Length",sb.toString().length()+"");
-
-            //POST实际上是以流的方式提交给服务器
-            conn.setDoOutput(true);
-            OutputStream outPutStream = conn.getOutputStream();
-            outPutStream.write(sb.toString().getBytes());
+            //post的方式提交实际上是留的方式提交给服务器
+            connection.setDoOutput(true);
+            OutputStream outputStream = connection.getOutputStream();
+            outputStream.write(data.getBytes());
 
             //获得结果码
-            int responseCode = conn.getResponseCode();
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                //请求成功
+//                mt("POST请求成功！");
 
-            //以结果码来判断是不是请求成功
-            if (responseCode == HttpURLConnection.HTTP_OK){
-                //表示成功
-//                InputStream inPutStream = conn.getInputStream();
-                reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mt("POST请求成功！");
+                    }
+                });
+
+
+                InputStream is = connection.getInputStream();
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 final String result = reader.readLine();
-                Log.d("------result------","POST"+result);
+                Log.d("------result------", "POST" + result);
 
                 //Handler机制来做？ 或者下面的方法
                 runOnUiThread(new Runnable() {
@@ -128,18 +125,96 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            }else {
-                return;
+
+//                return IOSUtil.inputStream2String(is);
+            } else {
+                //请求失败
+//                mt("POST请求失败！");
+                //Handler机制来做？ 或者下面的方法
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mt("POST请求失败！");
+                    }
+                });
+                return null;
             }
 
+        } catch (Exception e) {
+            e.printStackTrace();
 
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-
+        return null;
     }
+
+        //--------------------------
+//
+//    //POST方法
+//    private void doHttpPost(String link, Map<String,String> params) {
+//
+//        BufferedReader reader = null;
+//        StringBuffer sb;
+//
+//        try{
+//
+//            URL url = new URL(link);
+//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+//            conn.setConnectTimeout(5000);
+//            conn.setRequestMethod("POST");
+//
+//            //获得请求参数
+//            sb = new StringBuffer("");
+////            sb.append("?");
+//
+//            for (String key: params.keySet()
+//                    ){
+//                sb.append(key+"="+params.get(key)+"&");
+//            }
+//
+//            sb.deleteCharAt(sb.length()-1);
+//
+//            Log.d("-----link-----","POST"+sb.toString());
+//
+//            //开始请求
+//            conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+//            conn.setRequestProperty("Content-Length",sb.toString().length()+"");
+//
+//            //POST实际上是以流的方式提交给服务器
+//            conn.setDoOutput(true);
+//            OutputStream outPutStream = conn.getOutputStream();
+//            outPutStream.write(sb.toString().getBytes());
+//
+//            //获得结果码
+//            int responseCode = conn.getResponseCode();
+//
+//            //以结果码来判断是不是请求成功
+//            if (responseCode == HttpURLConnection.HTTP_OK){
+//                //表示成功
+////                InputStream inPutStream = conn.getInputStream();
+//                reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+//                final String result = reader.readLine();
+//                Log.d("------result------","POST"+result);
+//
+//                //Handler机制来做？ 或者下面的方法
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        mt(result);
+//                    }
+//                });
+//
+//            }else {
+//                return;
+//            }
+//
+//
+//        } catch (MalformedURLException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//    }
 
     //GET方法
     private void doHttpGet(String link, Map<String, String> params) {
@@ -203,6 +278,6 @@ public class MainActivity extends AppCompatActivity {
     //封装Toast
     public void mt(String message){
 
-        Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this,message,Toast.LENGTH_SHORT).show();
     }
 }
