@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ZJYNetwork</string>
+    <string name="default_status">请求状态</string>
+    <string name="login_txt">登陆</string>
 </resources>

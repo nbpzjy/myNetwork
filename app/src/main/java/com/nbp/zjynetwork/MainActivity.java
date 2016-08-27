@@ -1,13 +1,21 @@
 package com.nbp.zjynetwork;
 
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,11 +28,35 @@ import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class MainActivity extends AppCompatActivity {
 
 
     EditText ed_name,ed_password;
-    private String link = "http://192.168.123.206/mynetwork/index.php";
+    static TextView mTextViewStatus;
+    RadioGroup mRadioGroup;
+    static String method = "GET";
+    static ImageView ivMainTop;
+    private String link = "http://192.168.31.206/mynetwork/index.php";
+    private final static int REQUEST_SUCCESS = 98;//表示请求成功（与登录与否无关，可能登录失败也肯成功）
+
+    static Handler mHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            switch (msg.what){
+                case REQUEST_SUCCESS:
+
+                    String sRes = (String) msg.obj;
+                    mTextViewStatus.setText(sRes);
+                    ivMainTop.setImageResource(R.mipmap.olymp);
+                    break;
+
+            }
+            return false;
+        }
+    });
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +65,40 @@ public class MainActivity extends AppCompatActivity {
 
         ed_name = (EditText) findViewById(R.id.main_user_name);
         ed_password = (EditText) findViewById(R.id.main_pass_word);
+        mTextViewStatus = (TextView) findViewById(R.id.main_tv_status);
+        mRadioGroup = (RadioGroup) findViewById(R.id.rbtn_method_selection);
+        ivMainTop = (ImageView) findViewById(R.id.main_iv_top);
+
+        RadioGroup mRadioGroup = (RadioGroup) findViewById(R.id.rbtn_method_selection);
+
+        final RadioButton[] radioButtons = new RadioButton[2];
+        radioButtons[0] = (RadioButton) findViewById(R.id.method_get);
+        radioButtons[1] = (RadioButton) findViewById(R.id.method_post);
+
+        assert mRadioGroup != null;
+        mRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                for (int i = 0; i < 2;i++){
+                    if (radioButtons[i].isChecked() == true){
+                        Log.d("选择模式",i+""+method);
+
+                        if (i == 0){
+                            method = "GET";
+                            Log.d("选择模式",i+""+method);
+                            break;
+                        }
+
+                        if (i == 1){
+                            method = "POST";
+                            Log.d("选择模式",i+""+method);
+                            break;
+                        }
+
+                    }
+                }
+            }
+        });
     }
 
 
@@ -50,9 +116,10 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        String method = "POST";
+//        String method = mString;
 
         if ("GET".equals(method)){
+            Log.d("----method-------","GET");
             (new Thread(){
 
                 @Override
@@ -64,13 +131,17 @@ public class MainActivity extends AppCompatActivity {
 
 
         }else if ("POST".equals(method)){
-            (new Thread(){
+
+//            Log.d("------POST-method------","POST");
+
+            new Thread(){
                 @Override
                 public void run() {
+                    Log.d("---post---","1到这里了么？");
                     super.run();
-                    doHttpPost("jianyong","123");
+                    Log.d("------httpPost----",doHttpPost_one(link,params));
                 }
-            }).start();
+            }.start();
 
         }
     }
@@ -147,74 +218,72 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
-        //--------------------------
-//
-//    //POST方法
-//    private void doHttpPost(String link, Map<String,String> params) {
-//
-//        BufferedReader reader = null;
-//        StringBuffer sb;
-//
-//        try{
-//
-//            URL url = new URL(link);
-//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-//            conn.setConnectTimeout(5000);
-//            conn.setRequestMethod("POST");
-//
-//            //获得请求参数
-//            sb = new StringBuffer("");
-////            sb.append("?");
-//
-//            for (String key: params.keySet()
-//                    ){
-//                sb.append(key+"="+params.get(key)+"&");
-//            }
-//
-//            sb.deleteCharAt(sb.length()-1);
-//
-//            Log.d("-----link-----","POST"+sb.toString());
-//
-//            //开始请求
-//            conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
-//            conn.setRequestProperty("Content-Length",sb.toString().length()+"");
-//
-//            //POST实际上是以流的方式提交给服务器
-//            conn.setDoOutput(true);
-//            OutputStream outPutStream = conn.getOutputStream();
-//            outPutStream.write(sb.toString().getBytes());
-//
-//            //获得结果码
-//            int responseCode = conn.getResponseCode();
-//
-//            //以结果码来判断是不是请求成功
-//            if (responseCode == HttpURLConnection.HTTP_OK){
-//                //表示成功
-////                InputStream inPutStream = conn.getInputStream();
-//                reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-//                final String result = reader.readLine();
-//                Log.d("------result------","POST"+result);
-//
-//                //Handler机制来做？ 或者下面的方法
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        mt(result);
-//                    }
-//                });
-//
-//            }else {
-//                return;
-//            }
-//
-//
-//        } catch (MalformedURLException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//    }
+    private String doHttpPost_one(String link, Map<String,String> params){
+
+        Log.d("---post---","2到这里了么？");
+        try {
+            URL url = new URL(link);
+            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(5000);
+
+
+            StringBuffer sb = new StringBuffer("");
+            for (String key: params.keySet()
+                    ){
+                sb.append(key+"="+params.get(key)+"&");
+            }
+
+            sb.deleteCharAt(sb.length()-1);
+
+//            Log.d("-----link-----","GET"+sb.toString());
+
+            String parameters = sb.toString();
+
+
+            DataOutputStream out = new DataOutputStream(conn.getOutputStream());//获取网络输出流
+            byte[] bytes = parameters.getBytes();
+
+            out.write(bytes);//把数据写到输出流
+            out.flush();
+            out.close();
+
+            //读取服务器返回数据
+            //获取输入流
+            Log.d("---post---","3到这里了么？");
+            StringBuilder builder = new StringBuilder("");
+            Log.d("---post response code--",conn.getResponseCode()+""+"HTTTP_OK: "+HttpURLConnection.HTTP_OK);
+            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK){
+
+                Log.d("---post---","4到这里了么？");
+                //准备读取返回数据
+                BufferedReader reader = new BufferedReader(  new InputStreamReader(conn.getInputStream()));
+                String line = "";
+
+
+
+                while ((line = reader.readLine()) != null){
+
+                    builder.append(line);
+
+
+                }
+                reader.close();
+                conn.disconnect();
+                Log.d("---post---","5到这里了么？");
+
+            }
+
+            return builder.toString();
+
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
 
     //GET方法
     private void doHttpGet(String link, Map<String, String> params) {
@@ -232,7 +301,8 @@ public class MainActivity extends AppCompatActivity {
             //http://192.168.123.206/mynetwork/index.php    username    password
 
 
-            sb = new StringBuffer(link);
+            String getLink = "http://192.168.31.206/mynetwork/get.php";
+            sb = new StringBuffer(getLink);
             sb.append("?");
             for (String key: params.keySet()
                     ){
@@ -248,8 +318,10 @@ public class MainActivity extends AppCompatActivity {
             URL url = new URL(link);
             //建立联系
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
             //获得服务器端的回复
             int code = conn.getResponseCode();
+            Log.d("---GET---CODE--","response code: "+code+"");
             if (code == HttpURLConnection.HTTP_OK){
                 //读取答案
                 //I-O流来读取
@@ -258,13 +330,23 @@ public class MainActivity extends AppCompatActivity {
                 final String result = reader.readLine();
                 Log.d("------result------","GET"+result);
 
-                //Handler机制来做？ 或者下面的方法
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mt(result);
-                    }
-                });
+////                Handler机制来做？ 或者下面的方法
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        mt(result);
+//                        mTextViewStatus.setText(result);
+//                        ivMainTop.setImageResource(R.mipmap.olymp);
+//
+//                    }
+//                });
+
+                Message message  = Message.obtain();
+                message.obj = result;//通过message传任何对象
+               message.what = REQUEST_SUCCESS;//通过信息的存在原理--为什么要发送，如请求错误，超时，等...
+                mHandler.sendMessage(message);
+//                mTextViewStatus.setText(result);
+//                ivMainTop.setImageResource(R.mipmap.olymp);
 
 
             }

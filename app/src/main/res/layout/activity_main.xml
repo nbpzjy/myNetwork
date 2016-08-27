@@ -12,11 +12,22 @@
     android:orientation="vertical"
     android:gravity="center_horizontal">
 
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="Hello net work!"-->
+        <!--android:textSize="48sp"/>-->
+    <ImageView
+        android:id="@+id/main_iv_top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
     <TextView
-        android:layout_width="wrap_content"
+        android:id="@+id/main_tv_status"
+        android:layout_width="match_parent"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="72dp"
         android:layout_height="wrap_content"
-        android:text="Hello net work!"
-        android:textSize="48sp"/>
+        android:text="@string/default_status"/>
 
     <EditText
         android:layout_marginTop="10dp"
@@ -55,5 +66,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="login"
-        android:text="登陆"/>
+        android:text="@string/login_txt"/>
+
+
 </LinearLayout>
